@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local data: embedded database, uploads, email outbox
+/.data/
+
+# allow the example environment file
+!.env.example
