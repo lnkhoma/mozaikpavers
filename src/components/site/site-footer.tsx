@@ -3,6 +3,7 @@ import { CallLink, WhatsAppLink } from "@/components/analytics/contact-links";
 import { Icon } from "@/components/ui/icons";
 import { Logo } from "@/components/ui/logo";
 import { company } from "@/config/company";
+import { EXPLORE_LINKS } from "@/config/navigation";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -34,13 +35,7 @@ export function SiteFooter() {
         <div>
           <h2 className="mb-4 text-sm font-bold tracking-widest text-white uppercase">Explore</h2>
           <ul className="space-y-2.5 text-sm">
-            {[
-              ["/projects", "Our Projects"],
-              ["/products", "Products"],
-              ["/before-after", "Before & After Gallery"],
-              ["/services", "Services"],
-              ["/about", "About Mozaik Pavers"],
-            ].map(([href, label]) => (
+            {EXPLORE_LINKS.map(({ href, label }) => (
               <li key={href}>
                 <Link href={href} className="hover:text-white">{label}</Link>
               </li>

@@ -80,9 +80,14 @@ export async function GET(request: Request) {
       email: { transport: process.env.EMAIL_TRANSPORT?.trim() || "(default)", RESEND_API_KEY: set("RESEND_API_KEY"), EMAIL_FROM: set("EMAIL_FROM") },
       storage: { driver: process.env.STORAGE_DRIVER?.trim() || "local", SUPABASE_URL: set("SUPABASE_URL"), SUPABASE_SERVICE_ROLE_KEY: set("SUPABASE_SERVICE_ROLE_KEY") },
       googleSheet: {
-        sheetId: set("GOOGLE_SHEET_ID", "GOOGLE_SHEETS_SPREADSHEET_ID"),
-        accountEmail: set("GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_SHEETS_CLIENT_EMAIL"),
-        privateKey: set("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GOOGLE_SHEETS_PRIVATE_KEY"),
+        sheetId: set("GOOGLE_SHEET_ID"),
+        accountEmail: set("GOOGLE_SERVICE_ACCOUNT_EMAIL"),
+        privateKey: set("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY"),
+      },
+      getInTouchSheet: {
+        sheetId: set("GOOGLE_SHEETS_SPREADSHEET_ID"),
+        accountEmail: set("GOOGLE_SHEETS_CLIENT_EMAIL"),
+        privateKey: set("GOOGLE_SHEETS_PRIVATE_KEY"),
       },
     },
     runtime: { node: process.version, environment: process.env.NODE_ENV ?? "unknown" },

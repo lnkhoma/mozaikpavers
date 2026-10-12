@@ -16,7 +16,8 @@ const { getDb, closeDb } = await import("@/lib/db");
 const schema = await import("@/lib/db/schema");
 const { createQuotation } = await import("@/lib/services/quotations");
 const { recordQuotationDownload, quotationSheetRow, SHEET_HEADER } = await import("@/lib/services/quotation-sheet");
-const { appendSheetRow, resetSheetsTokenCache, sheetsConfig } = await import("@/lib/google/sheets");
+const { appendSheetRow, contactSheetsConfig, resetSheetsTokenCache, sheetsConfig } = await import("@/lib/google/sheets");
+const { contactSheetRow, recordContactSubmission, CONTACT_SHEET_HEADER } = await import("@/lib/services/contact-sheet");
 const { quotationRequestSchema } = await import("@/lib/validation/schemas");
 
 const config = { clientEmail: "robot@test.iam.gserviceaccount.com", privateKey: "unused", spreadsheetId: "sheet-123" };
@@ -173,11 +174,37 @@ describe("Google Sheets client", () => {
     expect(sheetsConfig()?.privateKey).toBe("-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----\n");
   });
 
-  it("also accepts the GOOGLE_SHEETS_* setting names", () => {
-    process.env.GOOGLE_SHEETS_CLIENT_EMAIL = "robot@test.iam.gserviceaccount.com";
+  it("keeps the Get in Touch sheet settings separate from the quotation sheet", () => {
+    process.env.GOOGLE_SHEETS_CLIENT_EMAIL = "forms@test.iam.gserviceaccount.com";
     process.env.GOOGLE_SHEETS_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\\nABC\\n-----END PRIVATE KEY-----\\n";
     process.env.GOOGLE_SHEETS_SPREADSHEET_ID = "sheet-456";
-    expect(sheetsConfig()).toMatchObject({ clientEmail: "robot@test.iam.gserviceaccount.com", spreadsheetId: "sheet-456" });
-    expect(sheetsConfig()?.privateKey).toBe("-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----\n");
+    expect(sheetsConfig()).toBeNull();
+    expect(contactSheetsConfig()).toMatchObject({ clientEmail: "forms@test.iam.gserviceaccount.com", spreadsheetId: "sheet-456" });
+    expect(contactSheetsConfig()?.privateKey).toBe("-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----\n");
+  });
+
+  it("builds the Get in Touch row and never throws when Google fails", async () => {
+    const input = {
+      fullName: "=Tamanda Phiri",
+      email: "t@example.com",
+      phone: "+265999000111",
+      location: "Area 10, Lilongwe",
+      squareMetres: 120,
+      availableDate: "2026-11-02",
+      availableTime: "morning" as const,
+    };
+    const row = contactSheetRow(input, "MP-L-TEST", new Date("2026-10-12T12:05:00Z"));
+    expect(row).toEqual(["2026-10-12 14:05", "MP-L-TEST", "=Tamanda Phiri", "t@example.com", "+265999000111", "Area 10, Lilongwe", 120, "2026-11-02", "Morning"]);
+    expect(row).toHaveLength(CONTACT_SHEET_HEADER.length);
+    expect(contactSheetRow({ ...input, squareMetres: undefined }, "MP-L-TEST", new Date())[6]).toBe("");
+
+    expect(await recordContactSubmission(input, "MP-L-TEST", { config: null })).toBe("not_configured");
+    const sent: unknown[] = [];
+    expect(await recordContactSubmission(input, "MP-L-TEST", { config, append: async (_c, _h, r) => void sent.push(r) })).toBe("exported");
+    expect(sent).toHaveLength(1);
+    const failing = async () => {
+      throw new Error("Google is down");
+    };
+    expect(await recordContactSubmission(input, "MP-L-TEST", { config, append: failing })).toBe("failed");
   });
 });

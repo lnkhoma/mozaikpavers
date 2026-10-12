@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icons";
 import { Logo } from "@/components/ui/logo";
 import { CallLink } from "@/components/analytics/contact-links";
 import { company } from "@/config/company";
+import { EXPLORE_LINKS } from "@/config/navigation";
 
 const NAV = [
   { href: "/projects", label: "Our Projects" },
@@ -30,10 +31,21 @@ export function SiteHeader() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+  // Close the dropdown on Escape or a click/tap outside it.
+  const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenOn(null);
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenOn(null);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
     return () => {
-      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
     };
   }, [open]);
 
@@ -42,7 +54,7 @@ export function SiteHeader() {
   return (
     <header
       className={`sticky top-0 z-40 border-b transition-colors ${
-        scrolled || open ? "border-ink-200 bg-sand-50/95 backdrop-blur" : "border-transparent bg-sand-50"
+        scrolled ? "border-ink-200 bg-sand-50/95 backdrop-blur" : "border-transparent bg-sand-50"
       }`}
     >
       <div className="container-page flex h-16 items-center justify-between gap-4 lg:h-20">
@@ -72,44 +84,48 @@ export function SiteHeader() {
           <Link href="/quote" className="btn btn-primary btn-sm hidden sm:inline-flex">
             <Icon name="calculator" className="size-4" /> Get a Quotation
           </Link>
-          <button
-            type="button"
-            className="inline-flex size-11 items-center justify-center rounded-lg text-ink-900 hover:bg-ink-100 lg:hidden"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            aria-label={open ? "Close menu" : "Open menu"}
-            onClick={() => setOpenOn(open ? null : pathname)}
-          >
-            <Icon name={open ? "x" : "menu"} className="size-6" />
-          </button>
+          <div ref={menuRef} className="relative lg:hidden">
+            <button
+              type="button"
+              className="inline-flex size-11 items-center justify-center rounded-lg text-ink-900 hover:bg-ink-100"
+              aria-expanded={open}
+              aria-haspopup="true"
+              aria-controls="explore-menu"
+              aria-label={open ? "Close menu" : "Open menu"}
+              onClick={() => setOpenOn(open ? null : pathname)}
+            >
+              <Icon name={open ? "x" : "menu"} className="size-6" />
+            </button>
+
+            {open && (
+              <nav
+                id="explore-menu"
+                aria-label="Explore"
+                className="absolute top-full right-0 z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] origin-top-right animate-fade-up overflow-hidden rounded-2xl bg-white shadow-lift ring-1 ring-ink-200"
+              >
+                <p className="border-b border-ink-100 px-5 pt-4 pb-3 text-xs font-bold tracking-widest text-ink-500 uppercase">Explore</p>
+                <ul className="p-2">
+                  {EXPLORE_LINKS.map((item) => (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        aria-current={active(item.href) ? "page" : undefined}
+                        className={`flex min-h-12 items-center justify-between rounded-xl px-3 text-base font-semibold transition-colors ${
+                          active(item.href) ? "bg-clay-50 text-clay-700" : "text-ink-800 hover:bg-sand-100"
+                        }`}
+                      >
+                        {item.label}
+                        <Icon name="chevronRight" className="size-4 text-ink-400" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+          </div>
         </div>
       </div>
 
-      {open && (
-        <div id="mobile-nav" className="fixed inset-x-0 top-16 bottom-0 z-40 overflow-y-auto bg-sand-50 lg:hidden">
-          <nav aria-label="Mobile" className="container-page flex flex-col py-4">
-            <Link href="/" className="border-b border-ink-200 py-4 text-lg font-semibold">Home</Link>
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`border-b border-ink-200 py-4 text-lg font-semibold ${active(item.href) ? "text-clay-700" : ""}`}
-              >
-                {item.label}
-              </Link>
-            ))}
-            <Link href="/site-assessment" className="border-b border-ink-200 py-4 text-lg font-semibold">
-              Request Site Assessment
-            </Link>
-            <div className="mt-6 grid gap-3">
-              <Link href="/quote" className="btn btn-primary btn-lg">
-                <Icon name="calculator" /> Generate My Quotation
-              </Link>
-              <CallLink source="mobile_menu" className="btn btn-dark btn-lg" />
-            </div>
-          </nav>
-        </div>
-      )}
     </header>
   );
 }

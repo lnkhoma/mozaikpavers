@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { botVerdict, clientIp, guardPublicPost, jsonError, readJson } from "@/lib/security/request";
+import { recordContactSubmission } from "@/lib/services/contact-sheet";
 import { createContactLead } from "@/lib/services/leads";
 import { contactSchema, fieldErrors } from "@/lib/validation/schemas";
 
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
   try {
     const { bot: _bot, ...input } = parsed.data;
     const lead = await createContactLead(input, { ipAddress: clientIp(request.headers) });
+    after(() => recordContactSubmission(input, lead.reference));
     return NextResponse.json({ ok: true, reference: lead.reference }, { status: 201 });
   } catch (error) {
     logger.error("contact.create_failed", { error });

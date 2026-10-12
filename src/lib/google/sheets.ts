@@ -4,15 +4,19 @@ import { logger } from "@/lib/logger";
 /**
  * Minimal Google Sheets client using a service account (no SDK).
  *
+ * Two sheets, each with its own service account:
+ *
+ * Downloaded quotations
  *   GOOGLE_SERVICE_ACCOUNT_EMAIL        …@….iam.gserviceaccount.com
  *   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY  the "private_key" from the JSON key
  *   GOOGLE_SHEET_ID                     spreadsheet id from its URL
  *   GOOGLE_SHEET_TAB                    optional tab name (default: first tab)
  *
- * Also accepted: GOOGLE_SHEETS_CLIENT_EMAIL, GOOGLE_SHEETS_PRIVATE_KEY,
- * GOOGLE_SHEETS_SPREADSHEET_ID, GOOGLE_SHEETS_TAB.
+ * "Get in Touch" form
+ *   GOOGLE_SHEETS_CLIENT_EMAIL, GOOGLE_SHEETS_PRIVATE_KEY,
+ *   GOOGLE_SHEETS_SPREADSHEET_ID, GOOGLE_SHEETS_TAB (optional)
  *
- * The spreadsheet must be shared with the service account as an Editor.
+ * Each spreadsheet must be shared with its service account as an Editor.
  */
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SCOPE = "https://www.googleapis.com/auth/spreadsheets";
@@ -26,24 +30,35 @@ export interface SheetsConfig {
   tab?: string;
 }
 
-/** First non-empty value among several accepted names for the same setting. */
-function setting(...names: string[]): string | undefined {
-  for (const name of names) {
-    const value = process.env[name]?.trim();
-    if (value) return value;
-  }
-  return undefined;
-}
-
-export function sheetsConfig(): SheetsConfig | null {
-  // The GOOGLE_SHEETS_* names are accepted as alternatives.
-  const clientEmail = setting("GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_SHEETS_CLIENT_EMAIL");
-  const rawKey = setting("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GOOGLE_SHEETS_PRIVATE_KEY");
-  const spreadsheetId = setting("GOOGLE_SHEET_ID", "GOOGLE_SHEETS_SPREADSHEET_ID");
+function configFrom(names: { email: string; key: string; id: string; tab: string }): SheetsConfig | null {
+  const setting = (name: string) => process.env[name]?.trim() || undefined;
+  const clientEmail = setting(names.email);
+  const rawKey = setting(names.key);
+  const spreadsheetId = setting(names.id);
   if (!clientEmail || !rawKey || !spreadsheetId) return null;
   // Hosting dashboards usually store the key on one line with literal "\n".
   const privateKey = rawKey.replace(/^"|"$/g, "").replace(/\\n/g, "\n");
-  return { clientEmail, privateKey, spreadsheetId, tab: setting("GOOGLE_SHEET_TAB", "GOOGLE_SHEETS_TAB") };
+  return { clientEmail, privateKey, spreadsheetId, tab: setting(names.tab) };
+}
+
+/** The sheet of downloaded quotations. */
+export function sheetsConfig(): SheetsConfig | null {
+  return configFrom({
+    email: "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+    key: "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+    id: "GOOGLE_SHEET_ID",
+    tab: "GOOGLE_SHEET_TAB",
+  });
+}
+
+/** The sheet of "Get in Touch" form submissions. */
+export function contactSheetsConfig(): SheetsConfig | null {
+  return configFrom({
+    email: "GOOGLE_SHEETS_CLIENT_EMAIL",
+    key: "GOOGLE_SHEETS_PRIVATE_KEY",
+    id: "GOOGLE_SHEETS_SPREADSHEET_ID",
+    tab: "GOOGLE_SHEETS_TAB",
+  });
 }
 
 let cachedToken: { value: string; expiresAt: number; for: string } | null = null;
