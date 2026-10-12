@@ -59,6 +59,7 @@ async function connect(): Promise<Database> {
   const { drizzle } = await import("drizzle-orm/postgres-js");
   const client = postgres(url, {
     max: Number(process.env.DATABASE_POOL_SIZE ?? 10),
+    connect_timeout: 10, // seconds; fail fast so pages can fall back
     prepare: process.env.DATABASE_PREPARE !== "false", // set false behind PgBouncer / Supabase pooler
     ssl: process.env.DATABASE_SSL === "false" ? false : url.includes("localhost") ? false : "require",
   });
