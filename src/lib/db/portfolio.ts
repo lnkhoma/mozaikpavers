@@ -289,6 +289,24 @@ export const TRANSFORMATIONS_2026_10_B: PortfolioProject[] = [
   },
 ];
 
+/** Third before & after transformation added October 2026 (photos supplied by Mozaik Pavers). */
+export const TRANSFORMATIONS_2026_10_C: PortfolioProject[] = [
+  {
+    slug: "garden-villa-driveway",
+    name: "Garden Villa Driveway",
+    location: "Malawi",
+    categories: ["residential", "driveways", "courtyards"],
+    description:
+      "A muddy, waterlogged yard in front of a landscaped home turned into a clean, wide driveway. Rectangular pavers are laid in a herringbone pattern from the gate to the stone-clad retaining wall, with kerbs edging the garden beds.",
+    paverType: "Rectangular pavers, herringbone pattern",
+    featured: false,
+    images: [
+      P("garden-villa-driveway", "before.jpg", "before", "Muddy, waterlogged yard in front of a landscaped home before paving", 1200, 1600),
+      P("garden-villa-driveway", "after.jpg", "after", "Herringbone paved driveway with kerbed garden beds in front of the home", 1200, 1600),
+    ],
+  },
+];
+
 /**
  * Seed batches. Each is inserted once (tracked by its audit marker), so a
  * project deleted in the admin is never recreated. Add new batches at the end.
@@ -298,4 +316,5 @@ export const PORTFOLIO_BATCHES: { marker: string; projects: PortfolioProject[]; 
   { marker: "seed.portfolio:commercial-2026-10", projects: COMMERCIAL_2026_10, sortOffset: 20 },
   { marker: "seed.portfolio:transformations-2026-10", projects: TRANSFORMATIONS_2026_10, sortOffset: 40 },
   { marker: "seed.portfolio:transformations-2026-10-b", projects: TRANSFORMATIONS_2026_10_B, sortOffset: 41 },
+  { marker: "seed.portfolio:transformations-2026-10-c", projects: TRANSFORMATIONS_2026_10_C, sortOffset: 42 },
 ];
