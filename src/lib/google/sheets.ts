@@ -9,6 +9,9 @@ import { logger } from "@/lib/logger";
  *   GOOGLE_SHEET_ID                     spreadsheet id from its URL
  *   GOOGLE_SHEET_TAB                    optional tab name (default: first tab)
  *
+ * Also accepted: GOOGLE_SHEETS_CLIENT_EMAIL, GOOGLE_SHEETS_PRIVATE_KEY,
+ * GOOGLE_SHEETS_SPREADSHEET_ID, GOOGLE_SHEETS_TAB.
+ *
  * The spreadsheet must be shared with the service account as an Editor.
  */
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -23,14 +26,24 @@ export interface SheetsConfig {
   tab?: string;
 }
 
+/** First non-empty value among several accepted names for the same setting. */
+function setting(...names: string[]): string | undefined {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return undefined;
+}
+
 export function sheetsConfig(): SheetsConfig | null {
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
-  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim();
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID?.trim();
+  // The GOOGLE_SHEETS_* names are accepted as alternatives.
+  const clientEmail = setting("GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_SHEETS_CLIENT_EMAIL");
+  const rawKey = setting("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GOOGLE_SHEETS_PRIVATE_KEY");
+  const spreadsheetId = setting("GOOGLE_SHEET_ID", "GOOGLE_SHEETS_SPREADSHEET_ID");
   if (!clientEmail || !rawKey || !spreadsheetId) return null;
   // Hosting dashboards usually store the key on one line with literal "\n".
   const privateKey = rawKey.replace(/^"|"$/g, "").replace(/\\n/g, "\n");
-  return { clientEmail, privateKey, spreadsheetId, tab: process.env.GOOGLE_SHEET_TAB?.trim() || undefined };
+  return { clientEmail, privateKey, spreadsheetId, tab: setting("GOOGLE_SHEET_TAB", "GOOGLE_SHEETS_TAB") };
 }
 
 let cachedToken: { value: string; expiresAt: number; for: string } | null = null;

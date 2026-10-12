@@ -114,6 +114,9 @@ describe("Google Sheets client", () => {
     delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     delete process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
     delete process.env.GOOGLE_SHEET_ID;
+    delete process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
+    delete process.env.GOOGLE_SHEETS_PRIVATE_KEY;
+    delete process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   });
 
   function stubGoogle(firstCell: unknown[][] | undefined) {
@@ -167,6 +170,14 @@ describe("Google Sheets client", () => {
     process.env.GOOGLE_SHEET_ID = "sheet-123";
     expect(sheetsConfig()).toBeNull();
     process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = '"-----BEGIN PRIVATE KEY-----\\nABC\\n-----END PRIVATE KEY-----\\n"';
+    expect(sheetsConfig()?.privateKey).toBe("-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----\n");
+  });
+
+  it("also accepts the GOOGLE_SHEETS_* setting names", () => {
+    process.env.GOOGLE_SHEETS_CLIENT_EMAIL = "robot@test.iam.gserviceaccount.com";
+    process.env.GOOGLE_SHEETS_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\\nABC\\n-----END PRIVATE KEY-----\\n";
+    process.env.GOOGLE_SHEETS_SPREADSHEET_ID = "sheet-456";
+    expect(sheetsConfig()).toMatchObject({ clientEmail: "robot@test.iam.gserviceaccount.com", spreadsheetId: "sheet-456" });
     expect(sheetsConfig()?.privateKey).toBe("-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----\n");
   });
 });
