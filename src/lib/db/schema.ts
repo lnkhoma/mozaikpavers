@@ -127,6 +127,11 @@ export const quotations = pgTable("quotations", {
   emailLastError: text("email_last_error"),
   emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
 
+  /** First time the customer downloaded the PDF from the website. */
+  downloadedAt: timestamp("downloaded_at", { withTimezone: true }),
+  /** Set once the quotation has been written to the Google Sheet (one row per quotation). */
+  sheetExportedAt: timestamp("sheet_exported_at", { withTimezone: true }),
+
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex("quotations_number_uq").on(t.quoteNumber),

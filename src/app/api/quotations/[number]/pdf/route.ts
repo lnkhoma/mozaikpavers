@@ -1,4 +1,4 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { getAdminUser } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { customers, quotations } from "@/lib/db/schema";
@@ -6,6 +6,7 @@ import { QUOTE_NUMBER_PATTERN } from "@/lib/ids";
 import { logger } from "@/lib/logger";
 import { LIMITS, rateLimit } from "@/lib/security/rate-limit";
 import { clientIp, jsonError } from "@/lib/security/request";
+import { recordQuotationDownload } from "@/lib/services/quotation-sheet";
 import { getQuotationForCustomer, renderQuotationPdf } from "@/lib/services/quotations";
 import { eq } from "drizzle-orm";
 
@@ -13,6 +14,7 @@ import { eq } from "drizzle-orm";
  * GET /api/quotations/:number/pdf?token=…
  * Customers use their secret token; signed-in staff can open any quotation.
  * The PDF is rebuilt from the stored snapshot, so it never changes.
+ * A customer's download is recorded and written once to the Google Sheet.
  */
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/quotations/[number]/pdf">) {
   const { number } = await ctx.params;
@@ -23,6 +25,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/quotatio
 
   const token = request.nextUrl.searchParams.get("token");
   let row = token ? await getQuotationForCustomer(number, token) : null;
+  const customerDownload = row !== null;
 
   if (!row && (await getAdminUser())) {
     const db = await getDb();
@@ -39,6 +42,11 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/quotatio
   try {
     const pdf = await renderQuotationPdf(row.quotation, row.customer);
     const download = request.nextUrl.searchParams.get("download") === "1";
+    if (customerDownload) {
+      // After the response, so the spreadsheet never delays or blocks the PDF.
+      const { quotation, customer } = row;
+      after(() => recordQuotationDownload(quotation, customer));
+    }
     return new Response(Buffer.from(pdf), {
       headers: {
         "Content-Type": "application/pdf",

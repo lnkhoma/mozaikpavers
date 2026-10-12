@@ -2,7 +2,6 @@ import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { MobileActionBar } from "@/components/site/mobile-action-bar";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
-import { WhatsAppWidget } from "@/components/site/whatsapp-widget";
 
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
@@ -15,7 +14,6 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       <SiteFooter />
       <MobileActionBar />
       <PageViewTracker />
-      <WhatsAppWidget />
     </>
   );
 }
