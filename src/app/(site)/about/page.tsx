@@ -49,29 +49,57 @@ export default function AboutPage() {
       </section>
 
       {/* ------------------- Vision · Mission · Values ------------------- */}
-      <section className="border-t border-ink-200 bg-white py-14 lg:py-20" aria-labelledby="vmv-heading">
+      <section className="border-t border-ink-200 bg-sand-100 py-16 lg:py-24" aria-labelledby="vmv-heading">
         <div className="container-page">
           <p className="eyebrow">Who we are</p>
           <h2 id="vmv-heading" className="mt-3 scroll-mt-28 text-3xl font-extrabold sm:text-4xl">
             Our Vision, Mission &amp; Values
           </h2>
-          <div className="mt-10 grid gap-8 md:grid-cols-3">
-            <PillarCard icon="target" title="Our Vision" backdrop="bg-sand-300" outline="border-ink-900">
-              <p>{VISION}</p>
-            </PillarCard>
-            <PillarCard icon="eye" title="Our Mission" backdrop="bg-clay-500" outline="border-ink-900" iconTone="bg-white text-clay-700">
-              <p>{MISSION}</p>
-            </PillarCard>
-            <PillarCard icon="gem" title="Our Values" backdrop="bg-ink-900" outline="border-clay-500" dark>
-              <ol className="mx-auto inline-block space-y-2 text-left">
-                {CORE_VALUES.map((v, i) => (
-                  <li key={v} className="flex gap-3">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-clay-500 text-xs font-bold text-white">{i + 1}</span>
-                    <span>{v}</span>
-                  </li>
-                ))}
-              </ol>
-            </PillarCard>
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-5">
+            {/* Vision: the lead statement */}
+            <article className="texture-pavers relative overflow-hidden rounded-3xl p-8 text-white shadow-lift sm:p-10 lg:col-span-3">
+              <span className="absolute inset-y-0 left-0 w-1.5 bg-clay-500" aria-hidden="true" />
+              <h3 className="flex items-center gap-3 text-sm font-bold tracking-[0.18em] text-clay-400 uppercase">
+                <span className="flex size-11 items-center justify-center rounded-full bg-clay-500 text-white">
+                  <Icon name="target" className="size-6" />
+                </span>
+                Our Vision
+              </h3>
+              <p className="mt-6 font-display text-2xl leading-snug font-bold sm:text-3xl lg:text-[2.1rem]">{VISION}</p>
+            </article>
+
+            {/* Mission */}
+            <article className="flex flex-col rounded-3xl bg-clay-600 p-8 text-white shadow-lift sm:p-10 lg:col-span-2">
+              <h3 className="flex items-center gap-3 text-sm font-bold tracking-[0.18em] text-white uppercase">
+                <span className="flex size-11 items-center justify-center rounded-full bg-white text-clay-700">
+                  <Icon name="eye" className="size-6" />
+                </span>
+                Our Mission
+              </h3>
+              <p className="mt-6 font-display text-2xl leading-snug font-bold sm:text-[1.7rem]">{MISSION}</p>
+            </article>
+          </div>
+
+          {/* Values */}
+          <div className="mt-6 rounded-3xl bg-white p-8 text-ink-900 shadow-card sm:p-10">
+            <h3 className="flex items-center gap-3 text-sm font-bold tracking-[0.18em] text-clay-700 uppercase">
+              <span className="flex size-11 items-center justify-center rounded-full bg-ink-900 text-white">
+                <Icon name="gem" className="size-6" />
+              </span>
+              Our Values
+            </h3>
+            <ol className="mt-8 grid gap-4 md:grid-cols-3">
+              {CORE_VALUES.map((value, i) => (
+                <li key={value} className="relative overflow-hidden rounded-2xl bg-sand-100 p-6">
+                  <span className="absolute -top-3 right-3 font-display text-7xl font-extrabold text-clay-500/15 select-none" aria-hidden="true">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <Icon name={VALUE_ICONS[i] ?? "check"} className="size-7 text-clay-600" />
+                  <p className="relative mt-4 font-display text-xl leading-tight font-bold">{value}</p>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
       </section>
@@ -81,35 +109,5 @@ export default function AboutPage() {
   );
 }
 
-/** Outlined card offset over a coloured block, after Mozaik Pavers' own Vision/Mission/Values slide. */
-function PillarCard({
-  icon,
-  title,
-  backdrop,
-  outline,
-  dark = false,
-  iconTone = "bg-white text-ink-900",
-  children,
-}: {
-  icon: IconName;
-  title: string;
-  backdrop: string;
-  outline: string;
-  dark?: boolean;
-  iconTone?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <article className="relative h-full">
-      <div className={`absolute top-6 right-6 bottom-0 left-0 rounded-[2rem] ${backdrop}`} aria-hidden="true" />
-      <div className={`relative mb-6 ml-6 flex h-[calc(100%-1.5rem)] flex-col items-center rounded-[2rem] border-2 px-6 py-8 text-center ${outline}`}>
-        <span className={`flex size-16 items-center justify-center rounded-full shadow-sm ${iconTone}`}>
-          <Icon name={icon} className="size-8" />
-        </span>
-        <h3 className={`mt-4 text-2xl font-bold ${dark ? "text-white" : "text-ink-950"}`}>{title}</h3>
-        <span className={`mt-2 h-0.5 w-12 rounded ${dark ? "bg-clay-500" : "bg-ink-950/40"}`} aria-hidden="true" />
-        <div className={`mt-4 text-lg leading-relaxed font-semibold ${dark ? "text-white" : "text-ink-950"}`}>{children}</div>
-      </div>
-    </article>
-  );
-}
+/** One icon per core value, in order: integrity, quality with speed, value for money. */
+const VALUE_ICONS: IconName[] = ["shield", "clock", "tag"];

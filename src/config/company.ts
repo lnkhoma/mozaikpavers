@@ -20,7 +20,7 @@ export const company = {
   /** All published numbers, main line first. */
   phones: [phone, phone2].map((number) => ({ number, href: telHref(number) })),
   whatsappDigits,
-  email: env(process.env.NEXT_PUBLIC_COMPANY_EMAIL, "info@mozaikpavers.mw"),
+  email: env(process.env.NEXT_PUBLIC_COMPANY_EMAIL, "sales@mozaikpavers.com"),
   address: env(process.env.NEXT_PUBLIC_COMPANY_ADDRESS, "Lilongwe, Malawi"),
   hours: env(process.env.NEXT_PUBLIC_COMPANY_HOURS, "Mon–Fri 7:30–17:00 · Sat 8:00–12:00"),
   siteUrl: env(process.env.NEXT_PUBLIC_SITE_URL, "http://localhost:3000").replace(/\/$/, ""),
