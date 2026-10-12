@@ -27,6 +27,7 @@ interface Outcome {
 }
 
 const OPTIONAL = [
+  { key: "includeCompaction", label: "Compaction", hint: "Mechanical compaction of the ground and the laid paving", priced: true },
   { key: "includeLandscaping", label: "Landscaping", hint: "Planting and finishing around the paving", priced: true },
   { key: "sitePreparation", label: "Site preparation", hint: "Clearing and levelling", priced: false },
   { key: "removalOfExistingPaving", label: "Removal of existing paving", hint: "Lifting and disposal of old surfaces", priced: false },
@@ -239,7 +240,11 @@ export function QuoteWizard({ pricing, initialArea }: { pricing: PricingConfig; 
                         <span className="block text-sm text-ink-500">{o.hint}</span>
                       </span>
                       <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-bold ${o.priced ? "bg-moss-500/10 text-moss-600" : "bg-sand-200 text-ink-600"}`}>
-                        {o.priced ? `${formatKwacha(pricing.landscapingPricePerSqm)}/m²` : "Site assessment"}
+                        {o.key === "includeCompaction"
+                          ? `${formatKwacha(pricing.compactionPricePerDay)}/day`
+                          : o.key === "includeLandscaping"
+                            ? `${formatKwacha(pricing.landscapingPricePerSqm)}/m²`
+                            : "Site assessment"}
                       </span>
                     </label>
                   );

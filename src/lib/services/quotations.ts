@@ -118,6 +118,7 @@ export async function createQuotation(
           accessToken: newAccessToken(),
           squareMetres: result.squareMetres,
           options: {
+            includeCompaction: input.options.includeCompaction,
             includeLandscaping: input.options.includeLandscaping,
             sitePreparation: input.options.sitePreparation,
             removalOfExistingPaving: input.options.removalOfExistingPaving,

@@ -60,7 +60,7 @@ describe("quotation workflow", () => {
     const q = outcome.quotation;
     expect(outcome.created).toBe(true);
     expect(q.quoteNumber).toMatch(/^MP-Q-\d{4}-00001$/);
-    expect(q.grandTotal).toBe(10_847_500);
+    expect(q.grandTotal).toBe(10_397_500);
     expect(q.pricingVersion).toBe(1);
     expect(q.pricingSnapshot.paverPricePerSqm).toBe(50_000);
 
@@ -69,7 +69,7 @@ describe("quotation workflow", () => {
     expect(items).toHaveLength(9);
     const [lead] = await db.select().from(schema.leads).where(eq(schema.leads.quotationId, q.id));
     expect(lead.status).toBe("new");
-    expect(lead.estimatedValue).toBe(10_847_500);
+    expect(lead.estimatedValue).toBe(10_397_500);
     expect(lead.source).toBe("online_quotation");
   });
 
@@ -97,12 +97,12 @@ describe("quotation workflow", () => {
 
     const after = await createQuotation(request());
     expect(after.quotation.pricingVersion).toBe(version);
-    expect(after.quotation.grandTotal).toBe(10_847_500 + 150 * 5_000);
+    expect(after.quotation.grandTotal).toBe(10_397_500 + 150 * 5_000);
 
     // The earlier quotation still reproduces exactly from its own snapshot.
     const old = before.quotation;
     expect(calculateQuotation(old.squareMetres, old.pricingSnapshot, old.options).grandTotal).toBe(old.grandTotal);
-    expect(old.grandTotal).toBe(10_847_500);
+    expect(old.grandTotal).toBe(10_397_500);
 
     await updatePricing(current.values, { actorUserId: adminId, changeNote: "restore" });
   });

@@ -18,15 +18,15 @@ describe("calculateQuotation — reference example (150 SQM)", () => {
       ["Fitting Labour", 150, 4_000, 600_000],
       ["Fitting Plastic", 3, 30_000, 90_000],
       ["Cutting Discs", 2, 80_000, 160_000],
-      ["Compaction", 2, 450_000, 900_000],
+      ["Compaction", 1, 450_000, 450_000],
       ["Landscaping", 150, 850, 127_500],
       ["Fitting Dust", 15, 28_000, 420_000],
       ["Dust Transportation", 1, 350_000, 350_000],
     ]);
   });
 
-  it("totals K10,847,500", () => {
-    expect(q.grandTotal).toBe(10_847_500);
+  it("totals K10,397,500", () => {
+    expect(q.grandTotal).toBe(10_397_500);
   });
 
   it("exposes the structured fields", () => {
@@ -41,14 +41,14 @@ describe("calculateQuotation — reference example (150 SQM)", () => {
       plasticCost: 90_000,
       cuttingDiscs: 2,
       cuttingDiscCost: 160_000,
-      compactionDays: 2,
-      compactionCost: 900_000,
+      compactionDays: 1,
+      compactionCost: 450_000,
       landscapingCost: 127_500,
       dustTons: 15,
       dustCost: 420_000,
       dustTransportTrips: 1,
       dustTransportCost: 350_000,
-      grandTotal: 10_847_500,
+      grandTotal: 10_397_500,
     });
   });
 });
@@ -73,13 +73,13 @@ describe("calculateQuotation — threshold boundaries", () => {
     { area: 51, trips: 1, rolls: 2, discs: 1, days: 1, dustTons: 6, dustTrips: 1, total: 4_255_350 },
     { area: 99, trips: 1, rolls: 2, discs: 1, days: 1, dustTons: 10, dustTrips: 1, total: 7_000_150 },
     { area: 100, trips: 1, rolls: 2, discs: 1, days: 1, dustTons: 10, dustTrips: 1, total: 7_055_000 },
-    { area: 101, trips: 2, rolls: 3, discs: 2, days: 2, dustTons: 11, dustTrips: 1, total: 8_047_850 },
-    { area: 149, trips: 2, rolls: 3, discs: 2, days: 2, dustTons: 15, dustTrips: 1, total: 10_792_650 },
-    { area: 150, trips: 2, rolls: 3, discs: 2, days: 2, dustTons: 15, dustTrips: 1, total: 10_847_500 },
-    { area: 151, trips: 2, rolls: 4, discs: 2, days: 2, dustTons: 16, dustTrips: 2, total: 11_310_350 },
-    { area: 199, trips: 2, rolls: 4, discs: 2, days: 2, dustTons: 20, dustTrips: 2, total: 14_055_150 },
-    { area: 200, trips: 2, rolls: 4, discs: 2, days: 2, dustTons: 20, dustTrips: 2, total: 14_110_000 },
-    { area: 201, trips: 3, rolls: 5, discs: 3, days: 3, dustTons: 21, dustTrips: 2, total: 15_102_850 },
+    { area: 101, trips: 2, rolls: 3, discs: 2, days: 1, dustTons: 11, dustTrips: 1, total: 7_597_850 },
+    { area: 149, trips: 2, rolls: 3, discs: 2, days: 1, dustTons: 15, dustTrips: 1, total: 10_342_650 },
+    { area: 150, trips: 2, rolls: 3, discs: 2, days: 1, dustTons: 15, dustTrips: 1, total: 10_397_500 },
+    { area: 151, trips: 2, rolls: 4, discs: 2, days: 1, dustTons: 16, dustTrips: 2, total: 10_860_350 },
+    { area: 199, trips: 2, rolls: 4, discs: 2, days: 1, dustTons: 20, dustTrips: 2, total: 13_605_150 },
+    { area: 200, trips: 2, rolls: 4, discs: 2, days: 1, dustTons: 20, dustTrips: 2, total: 13_660_000 },
+    { area: 201, trips: 3, rolls: 5, discs: 3, days: 1, dustTons: 21, dustTrips: 2, total: 14_202_850 },
   ];
 
   it.each(cases)("$area SQM", (c) => {
@@ -112,6 +112,18 @@ describe("calculateQuotation — options", () => {
     expect(withL.grandTotal - withoutL.grandTotal).toBe(127_500);
   });
 
+  it("includes compaction by default and drops it when deselected", () => {
+    const withC = calculateQuotation(150, DEFAULT_PRICING);
+    const withoutC = calculateQuotation(150, DEFAULT_PRICING, { includeCompaction: false });
+    expect(withC.lines.some((l) => l.code === "COMPACTION")).toBe(true);
+    expect(withoutC.lines.some((l) => l.code === "COMPACTION")).toBe(false);
+    expect(withoutC.compactionIncluded).toBe(false);
+    expect(withoutC.compactionDays).toBe(0);
+    expect(withoutC.compactionCost).toBe(0);
+    expect(withC.grandTotal - withoutC.grandTotal).toBe(450_000);
+    expect(withoutC.grandTotal).toBe(9_947_500);
+  });
+
   it("lists unpriced services as subject to site assessment without inventing a price", () => {
     const q = calculateQuotation(150, DEFAULT_PRICING, {
       sitePreparation: true,
@@ -131,7 +143,7 @@ describe("calculateQuotation — options", () => {
       expect(l.note).toBe(SUBJECT_TO_ASSESSMENT);
     }
     expect(q.hasItemsSubjectToAssessment).toBe(true);
-    expect(q.grandTotal).toBe(10_847_500);
+    expect(q.grandTotal).toBe(10_397_500);
   });
 
   it("ignores blank 'other requirements'", () => {
@@ -141,10 +153,13 @@ describe("calculateQuotation — options", () => {
 });
 
 describe("calculateQuotation — configurable pricing", () => {
-  it("uses the compaction productivity assumption from configuration", () => {
-    const q = calculateQuotation(150, { ...DEFAULT_PRICING, sqmCompactedPerDay: 50 });
-    expect(q.compactionDays).toBe(3);
-    expect(q.compactionCost).toBe(1_350_000);
+  it("charges compaction as one day whatever the area", () => {
+    for (const area of [1, 100, 101, 5_000]) {
+      const q = calculateQuotation(area, DEFAULT_PRICING);
+      expect(q.compactionDays).toBe(1);
+      expect(q.compactionCost).toBe(450_000);
+    }
+    expect(calculateQuotation(5_000, { ...DEFAULT_PRICING, compactionPricePerDay: 500_000 }).compactionCost).toBe(500_000);
   });
 
   it("reflects an updated paver price", () => {

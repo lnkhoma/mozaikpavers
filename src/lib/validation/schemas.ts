@@ -65,6 +65,7 @@ export const areaSchema = z.coerce
   .transform((n) => Math.round(n * 100) / 100);
 
 export const quotationOptionsSchema = z.object({
+  includeCompaction: z.boolean().default(true),
   includeLandscaping: z.boolean().default(true),
   sitePreparation: z.boolean().default(false),
   removalOfExistingPaving: z.boolean().default(false),

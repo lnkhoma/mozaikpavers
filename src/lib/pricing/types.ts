@@ -18,9 +18,8 @@ export interface PricingConfig {
   sqmPerPlasticRoll: number;
   cuttingDiscPrice: number;
   sqmPerCuttingDisc: number;
+  /** Compaction is charged as one day at this price, whatever the area. */
   compactionPricePerDay: number;
-  /** Productivity assumption: SQM of paving compacted per day. */
-  sqmCompactedPerDay: number;
   landscapingPricePerSqm: number;
   dustPricePerTon: number;
   sqmPerDustTon: number;
@@ -34,6 +33,7 @@ export type PricingKey = keyof PricingConfig;
 
 /** Additional services a customer can ask to be included. */
 export const OPTIONAL_SERVICES = [
+  "compaction",
   "landscaping",
   "sitePreparation",
   "removalOfExistingPaving",
@@ -43,6 +43,7 @@ export const OPTIONAL_SERVICES = [
 export type OptionalService = (typeof OPTIONAL_SERVICES)[number];
 
 export interface QuotationOptions {
+  includeCompaction: boolean;
   includeLandscaping: boolean;
   sitePreparation: boolean;
   removalOfExistingPaving: boolean;
@@ -94,6 +95,7 @@ export interface QuotationResult {
   cuttingDiscs: number;
   cuttingDiscCost: number;
 
+  compactionIncluded: boolean;
   compactionDays: number;
   compactionCost: number;
 

@@ -97,7 +97,7 @@ single source of truth. It is pure and deterministic, so:
 Unpriced optional services (site preparation, removal, drainage, other) appear as
 **"Price subject to site assessment"** and are excluded from the total — the engine never invents a price.
 
-Tests cover the 150 SQM reference example (**K10,847,500**) and every threshold boundary
+Tests cover the 150 SQM reference example (**K10,397,500**) and every threshold boundary
 (49/50/51, 99/100/101, 149/150/151, 199/200/201 SQM), with expected values worked out by hand.
 
 ### Pricing versions & reproducibility

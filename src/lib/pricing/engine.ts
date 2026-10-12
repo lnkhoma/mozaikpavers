@@ -10,6 +10,7 @@ export const MIN_AREA_SQM = 1;
 export const MAX_AREA_SQM = 100_000;
 
 export const DEFAULT_OPTIONS: QuotationOptions = {
+  includeCompaction: true,
   includeLandscaping: true,
   sitePreparation: false,
   removalOfExistingPaving: false,
@@ -62,7 +63,6 @@ export function assertValidPricing(config: PricingConfig): void {
     "sqmPerPaverTrip",
     "sqmPerPlasticRoll",
     "sqmPerCuttingDisc",
-    "sqmCompactedPerDay",
     "sqmPerDustTon",
     "dustTruckCapacityTons",
   ];
@@ -102,7 +102,9 @@ export function calculateQuotation(
   const cuttingDiscs = unitsRequired(area, config.sqmPerCuttingDisc);
   const cuttingDiscCost = cuttingDiscs * config.cuttingDiscPrice;
 
-  const compactionDays = unitsRequired(area, config.sqmCompactedPerDay);
+  const compactionIncluded = opts.includeCompaction;
+  // Compaction is a fixed one-day charge: it does not grow with the area.
+  const compactionDays = compactionIncluded ? 1 : 0;
   const compactionCost = compactionDays * config.compactionPricePerDay;
 
   const landscapingIncluded = opts.includeLandscaping;
@@ -123,8 +125,10 @@ export function calculateQuotation(
     line("FITTING_LABOUR", "Fitting Labour", area, "SQM", config.fittingLabourPerSqm, fittingLabourCost),
     line("FITTING_PLASTIC", "Fitting Plastic", plasticRolls, plural(plasticRolls, "roll"), config.plasticPricePerRoll, plasticCost),
     line("CUTTING_DISCS", "Cutting Discs", cuttingDiscs, plural(cuttingDiscs, "disc"), config.cuttingDiscPrice, cuttingDiscCost),
-    line("COMPACTION", "Compaction", compactionDays, plural(compactionDays, "day"), config.compactionPricePerDay, compactionCost),
   ];
+  if (compactionIncluded) {
+    lines.push(line("COMPACTION", "Compaction", compactionDays, plural(compactionDays, "day"), config.compactionPricePerDay, compactionCost));
+  }
   if (landscapingIncluded) {
     lines.push(line("LANDSCAPING", "Landscaping", area, "SQM", config.landscapingPricePerSqm, landscapingCost));
   }
@@ -167,6 +171,7 @@ export function calculateQuotation(
     plasticCost,
     cuttingDiscs,
     cuttingDiscCost,
+    compactionIncluded,
     compactionDays,
     compactionCost,
     landscapingIncluded,

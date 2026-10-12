@@ -12,9 +12,13 @@ export interface CurrentPricing {
   updatedAt: Date;
 }
 
-/** Fill keys added to PricingConfig after a version was stored. */
+/**
+ * Fill keys added to PricingConfig after a version was stored, and drop
+ * ones since retired (compaction used to scale with "sqmCompactedPerDay").
+ */
 function complete(values: Partial<PricingConfig>): PricingConfig {
-  return { ...DEFAULT_PRICING, ...values };
+  const { sqmCompactedPerDay: _retired, ...current } = values as Partial<PricingConfig> & { sqmCompactedPerDay?: number };
+  return { ...DEFAULT_PRICING, ...current };
 }
 
 export async function getCurrentPricing(executor?: Executor): Promise<CurrentPricing> {

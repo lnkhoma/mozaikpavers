@@ -58,7 +58,7 @@ describe("recordQuotationDownload", () => {
       "+265888111222",
       "Area 43, Lilongwe",
       150,
-      10_847_500,
+      10_397_500,
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     ]);
   });
@@ -134,7 +134,7 @@ describe("Google Sheets client", () => {
 
   it("signs in as the service account and writes the heading row to an empty sheet", async () => {
     const calls = stubGoogle(undefined);
-    await appendSheetRow(live, ["Name", "Total"], ["=HYPERLINK(1)", 10_847_500]);
+    await appendSheetRow(live, ["Name", "Total"], ["=HYPERLINK(1)", 10_397_500]);
 
     const [signIn, read, append] = calls;
     expect(signIn.url).toBe("https://oauth2.googleapis.com/token");
@@ -144,7 +144,7 @@ describe("Google Sheets client", () => {
 
     expect(append.method).toBe("POST");
     expect(append.url).toContain("valueInputOption=RAW"); // text can never run as a formula
-    expect(JSON.parse(append.body!)).toEqual({ values: [["Name", "Total"], ["=HYPERLINK(1)", 10_847_500]] });
+    expect(JSON.parse(append.body!)).toEqual({ values: [["Name", "Total"], ["=HYPERLINK(1)", 10_397_500]] });
   });
 
   it("appends only the data row when the sheet already has headings, reusing the sign-in", async () => {

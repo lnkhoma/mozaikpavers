@@ -64,7 +64,7 @@ function itemNote(code: LineCode, p: PricingConfig | undefined, paverStyle?: str
     case "CUTTING_DISCS":
       return p && `1 disc per ${formatNumber(p.sqmPerCuttingDisc)} SQM`;
     case "COMPACTION":
-      return p && `Based on ${formatNumber(p.sqmCompactedPerDay)} SQM per day`;
+      return "Fixed charge, regardless of area";
     case "LANDSCAPING":
       return "Finishing around the paved area";
     case "FITTING_DUST":
