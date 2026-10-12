@@ -9,7 +9,7 @@ export const QUOTATION = {
     name: "Mozaik Works",
     addressLines: ["C/o Exponential Marketing", "P. O Box 11031", "Lilongwe", "Malawi"],
     phones: company.phones.map((p) => p.number.replace(/^\+265\s?/, "0").replace(/\s/g, "")),
-    email: process.env.QUOTATION_EMAIL?.trim() || "lnkhoma@gmail.com",
+    email: process.env.QUOTATION_EMAIL?.trim() || "sales@mozaikpavers.com",
   },
 
   /** Work not covered by the online estimate. */
