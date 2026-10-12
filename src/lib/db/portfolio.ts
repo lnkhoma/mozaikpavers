@@ -253,6 +253,42 @@ export const COMMERCIAL_2026_10: PortfolioProject[] = [
   },
 ];
 
+/** Before & after transformation added October 2026 (photos supplied by Mozaik Pavers). */
+export const TRANSFORMATIONS_2026_10: PortfolioProject[] = [
+  {
+    slug: "blue-bungalow-courtyard",
+    name: "Blue Bungalow Courtyard",
+    location: "Malawi",
+    categories: ["residential", "courtyards", "driveways"],
+    description:
+      "From bare red soil around a newly built bungalow to a finished, paved compound: patterned interlocking pavers across the courtyard, a raised paved apron along the house for planters, kerb edging and a drainage channel to carry rainwater away.",
+    paverType: "Patterned interlocking pavers",
+    featured: false,
+    images: [
+      P("blue-bungalow-courtyard", "before.jpg", "before", "Bare red soil around a newly built bungalow before paving", 1500, 728),
+      P("blue-bungalow-courtyard", "after.jpg", "after", "Patterned paving, raised apron with planters and drainage channel beside the finished bungalow", 1200, 1600),
+    ],
+  },
+];
+
+/** Second before & after transformation added October 2026 (photos supplied by Mozaik Pavers). */
+export const TRANSFORMATIONS_2026_10_B: PortfolioProject[] = [
+  {
+    slug: "housing-estate-access-road",
+    name: "Housing Estate Access Road",
+    location: "Malawi",
+    categories: ["residential", "driveways"],
+    description:
+      "The shared access road between the houses of a new housing estate, taken from trenched red soil to a paved surface. Interlocking zig-zag pavers are laid wall to wall between the houses and up to each entrance step.",
+    paverType: "Interlocking zig-zag pavers",
+    featured: false,
+    images: [
+      P("housing-estate-access-road", "before.jpg", "before", "Trenched red-soil road between newly built houses before paving", 1200, 1600),
+      P("housing-estate-access-road", "after.jpg", "after", "Interlocking zig-zag paving being laid between the houses of a housing estate", 1200, 1600),
+    ],
+  },
+];
+
 /**
  * Seed batches. Each is inserted once (tracked by its audit marker), so a
  * project deleted in the admin is never recreated. Add new batches at the end.
@@ -260,4 +296,6 @@ export const COMMERCIAL_2026_10: PortfolioProject[] = [
 export const PORTFOLIO_BATCHES: { marker: string; projects: PortfolioProject[]; sortOffset: number }[] = [
   { marker: "seed.portfolio", projects: PORTFOLIO, sortOffset: 0 },
   { marker: "seed.portfolio:commercial-2026-10", projects: COMMERCIAL_2026_10, sortOffset: 20 },
+  { marker: "seed.portfolio:transformations-2026-10", projects: TRANSFORMATIONS_2026_10, sortOffset: 40 },
+  { marker: "seed.portfolio:transformations-2026-10-b", projects: TRANSFORMATIONS_2026_10_B, sortOffset: 41 },
 ];
