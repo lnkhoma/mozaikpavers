@@ -33,7 +33,8 @@ export const QUOTATION_DISCLAIMER =
 /*
  * Layout modelled on Mozaik Works' quote template: logo top-left, "QUOTE"
  * and number top-right, issuer block, customer and dates, a dark-headed
- * item table, sub total and a shaded total row, then terms and bank details.
+ * item table, sub total and a shaded total row, then terms. Bank details are
+ * shown as a placeholder only.
  */
 const INK = rgb(0.2, 0.2, 0.2);
 const MUTED = rgb(0.45, 0.45, 0.45);
@@ -300,20 +301,9 @@ export async function buildQuotationPdf(data: QuotationPdfData): Promise<Uint8Ar
   y -= 8;
   para(`${n++}. ${QUOTATION.paymentNote}`, { gap: 10 });
 
-  for (const acc of QUOTATION.bankAccounts) {
-    const lines = [
-      `Account Name: ${acc.accountName}`,
-      `Account No: ${acc.accountNumber}`,
-      "accountType" in acc && acc.accountType ? `Type of account: ${acc.accountType}` : null,
-      `Bank: ${acc.bank}${"branch" in acc && acc.branch ? `, ${acc.branch}` : ""}`,
-    ].filter((l): l is string => !!l);
-    ensure(lines.length * 12 + 8);
-    for (const l of lines) {
-      text(l, M, y);
-      y -= 12;
-    }
-    y -= 8;
-  }
+  ensure(20);
+  text(`Bank account details: ${QUOTATION.bankDetailsPlaceholder}`, M, y);
+  y -= 20;
 
   y -= 8;
   // Validity comes from the pricing snapshot; older data falls back to the dates.

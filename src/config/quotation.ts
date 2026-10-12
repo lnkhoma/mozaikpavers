@@ -21,10 +21,11 @@ export const QUOTATION = {
 
   paymentNote: "All payments to be made only through the listed bank account details. If cash is paid, please get an electronic receipt for it.",
 
-  bankAccounts: [
-    { bank: "National Bank", branch: "Chichiri Branch", accountName: "Levison Nkhoma", accountNumber: "1006663865" },
-    { bank: "Centenary Bank", accountName: "Mozaik Works", accountNumber: "9064721570038", accountType: "Current" },
-  ],
+  /**
+   * Printed under the payment note. Real bank details are deliberately not
+   * shown on self-generated quotations; they are given to the customer directly.
+   */
+  bankDetailsPlaceholder: "XXXX XXXX XXX",
 
   /** Shown after "This quotation is valid for N days from the day of issue." */
   closingTerms: [
