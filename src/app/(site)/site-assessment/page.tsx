@@ -3,7 +3,21 @@ import { CallLink, WhatsAppLink } from "@/components/analytics/contact-links";
 import { SiteAssessmentForm, type LinkedQuote } from "@/components/site/site-assessment-form";
 import { Icon } from "@/components/ui/icons";
 import { QUOTE_NUMBER_PATTERN } from "@/lib/ids";
+import { logger } from "@/lib/logger";
+import { getOfflineQuotation, isOfflineToken } from "@/lib/services/offline-quotations";
 import { getQuotationForCustomer } from "@/lib/services/quotations";
+
+/** The quotation a "book a site assessment" link points to, if it is genuine. */
+async function findLinkedQuotation(quote: string, token: string) {
+  if (isOfflineToken(token)) return getOfflineQuotation(quote, token);
+  try {
+    return await getQuotationForCustomer(quote, token);
+  } catch (error) {
+    // Without the database the form still works; it just is not pre-filled.
+    logger.warn("site_assessment.quote_lookup_failed", { error });
+    return null;
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +31,7 @@ export default async function SiteAssessmentPage({ searchParams }: PageProps<"/s
   const { quote, token } = await searchParams;
   let linked: LinkedQuote | undefined;
   if (typeof quote === "string" && typeof token === "string" && QUOTE_NUMBER_PATTERN.test(quote)) {
-    const row = await getQuotationForCustomer(quote, token);
+    const row = await findLinkedQuotation(quote, token);
     if (row) {
       linked = {
         quoteNumber: row.quotation.quoteNumber,

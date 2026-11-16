@@ -116,7 +116,7 @@ export type QuotationRequestInput = z.input<typeof quotationRequestSchema>;
 export const siteVisitRequestSchema = z.object({
   /** When following up a quotation, the quote number + access token link it. */
   quoteNumber: optionalText(32),
-  accessToken: optionalText(128),
+  accessToken: optionalText(4096),
   fullName: cleanText(120).pipe(z.string().min(2, "Please enter your full name")),
   email: emailSchema,
   phone: phoneSchema,

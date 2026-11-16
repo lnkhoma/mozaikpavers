@@ -123,6 +123,18 @@ export async function appendSheetRow(config: SheetsConfig, header: string[], row
   logger.info("sheets.row_appended", { rows: rows.length });
 }
 
+/** Adds the configured tab to the spreadsheet if it does not exist yet. */
+export async function ensureSheetTab(config: SheetsConfig): Promise<void> {
+  if (!config.tab) return;
+  const meta = (await sheetsFetch(config, "?fields=sheets.properties.title")) as { sheets?: { properties?: { title?: string } }[] };
+  if (meta.sheets?.some((s) => s.properties?.title === config.tab)) return;
+  await sheetsFetch(config, ":batchUpdate", {
+    method: "POST",
+    body: JSON.stringify({ requests: [{ addSheet: { properties: { title: config.tab } } }] }),
+  });
+  logger.info("sheets.tab_created", { tab: config.tab });
+}
+
 /** Every value in one column (e.g. "B"), top to bottom. */
 export async function readSheetColumn(config: SheetsConfig, column: string): Promise<string[]> {
   const body = (await sheetsFetch(config, `/values/${encodeURIComponent(range(config, `${column}:${column}`))}`)) as { values?: string[][] };

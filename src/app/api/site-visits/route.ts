@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
+import { newLeadReference } from "@/lib/ids";
 import { logger } from "@/lib/logger";
 import { botVerdict, clientIp, guardPublicPost, jsonError, readJson } from "@/lib/security/request";
 import { requestSiteVisit } from "@/lib/services/leads";
+import { getOfflineQuotation, isOfflineToken } from "@/lib/services/offline-quotations";
+import { recordSiteVisitSubmission } from "@/lib/services/site-visit-sheet";
 import { fieldErrors, siteVisitRequestSchema } from "@/lib/validation/schemas";
 
 /** POST /api/site-visits — request a site assessment. */
@@ -21,12 +24,22 @@ export async function POST(request: Request) {
   }
   if (botVerdict(parsed.data.bot) !== "ok") return jsonError(400, "We couldn't process this request. Please try again in a moment.");
 
+  const { bot: _bot, ...input } = parsed.data;
   try {
-    const { bot: _bot, ...input } = parsed.data;
     const result = await requestSiteVisit(input, { ipAddress: clientIp(request.headers) });
     return NextResponse.json({ ok: true, reference: result.reference, linkedQuote: result.linkedQuote }, { status: 201 });
   } catch (error) {
     logger.error("site_visit.request_failed", { error });
-    return jsonError(500, "Something went wrong. Please try again or call us.");
   }
+
+  // The database is unavailable: the request counts as received once it is on the Google Sheet.
+  const reference = newLeadReference();
+  const linkedQuote =
+    input.quoteNumber && isOfflineToken(input.accessToken) && getOfflineQuotation(input.quoteNumber, input.accessToken)
+      ? input.quoteNumber
+      : null;
+  if ((await recordSiteVisitSubmission(input, reference, linkedQuote)) === "exported") {
+    return NextResponse.json({ ok: true, reference, linkedQuote }, { status: 201 });
+  }
+  return jsonError(500, "Something went wrong. Please try again or call us.");
 }
