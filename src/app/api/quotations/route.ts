@@ -2,6 +2,8 @@ import { after, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { QuotationInputError } from "@/lib/pricing/engine";
 import { botVerdict, clientIp, guardPublicPost, jsonError, readJson } from "@/lib/security/request";
+import { getPublicPricing } from "@/lib/public-data";
+import { createOfflineQuotation, deliverOfflineQuotationEmail } from "@/lib/services/offline-quotations";
 import { createQuotation, deliverQuotationEmail, notifySalesOfQuotation } from "@/lib/services/quotations";
 import { fieldErrors, quotationRequestSchema } from "@/lib/validation/schemas";
 
@@ -68,6 +70,31 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof QuotationInputError) return jsonError(422, error.message);
     logger.error("quotation.create_failed", { error });
+  }
+
+  // The database is unavailable: issue the quotation without it. The Google
+  // Sheet records it when the customer downloads the PDF.
+  try {
+    const { quotation, customer } = createOfflineQuotation(parsed.data, (await getPublicPricing()).values);
+    const delivery = await deliverOfflineQuotationEmail(quotation, customer);
+    return NextResponse.json(
+      {
+        ok: true,
+        quoteNumber: quotation.quoteNumber,
+        accessToken: quotation.accessToken,
+        customerName: customer.fullName,
+        customerEmail: customer.email,
+        squareMetres: quotation.squareMetres,
+        grandTotal: quotation.grandTotal,
+        validUntil: quotation.validUntil,
+        result: quotation.result,
+        delivery: { status: delivery.status, ...(delivery.status === "failed" ? { canRetry: false } : {}) },
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    if (error instanceof QuotationInputError) return jsonError(422, error.message);
+    logger.error("quotation.offline_create_failed", { error });
     return jsonError(500, "Something went wrong while generating your quotation. Please try again.");
   }
 }

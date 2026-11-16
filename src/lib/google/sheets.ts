@@ -123,6 +123,12 @@ export async function appendSheetRow(config: SheetsConfig, header: string[], row
   logger.info("sheets.row_appended", { rows: rows.length });
 }
 
+/** Every value in one column (e.g. "B"), top to bottom. */
+export async function readSheetColumn(config: SheetsConfig, column: string): Promise<string[]> {
+  const body = (await sheetsFetch(config, `/values/${encodeURIComponent(range(config, `${column}:${column}`))}`)) as { values?: string[][] };
+  return (body.values ?? []).map((row) => String(row[0] ?? ""));
+}
+
 /** Test hook: forget the cached Google access token. */
 export function resetSheetsTokenCache(): void {
   cachedToken = null;
