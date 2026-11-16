@@ -1,4 +1,5 @@
 import { after, NextResponse } from "next/server";
+import { databaseConfigured } from "@/lib/db";
 import { newLeadReference } from "@/lib/ids";
 import { logger } from "@/lib/logger";
 import { botVerdict, clientIp, guardPublicPost, jsonError, readJson } from "@/lib/security/request";
@@ -24,15 +25,17 @@ export async function POST(request: Request) {
   if (botVerdict(parsed.data.bot) !== "ok") return jsonError(400, "We couldn't process this request. Please try again in a moment.");
 
   const { bot: _bot, ...input } = parsed.data;
-  try {
-    const lead = await createContactLead(input, { ipAddress: clientIp(request.headers) });
-    after(() => recordContactSubmission(input, lead.reference));
-    return NextResponse.json({ ok: true, reference: lead.reference }, { status: 201 });
-  } catch (error) {
-    logger.error("contact.create_failed", { error });
+  if (databaseConfigured()) {
+    try {
+      const lead = await createContactLead(input, { ipAddress: clientIp(request.headers) });
+      after(() => recordContactSubmission(input, lead.reference));
+      return NextResponse.json({ ok: true, reference: lead.reference }, { status: 201 });
+    } catch (error) {
+      logger.error("contact.create_failed", { error });
+    }
   }
 
-  // The database is unavailable. The enquiry still counts as received if it
+  // No database (or it is unavailable): the enquiry counts as received once it
   // reaches the Google Sheet, so wait for that write before answering.
   const reference = newLeadReference();
   if ((await recordContactSubmission(input, reference)) === "exported") {

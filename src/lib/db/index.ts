@@ -31,6 +31,16 @@ function databaseUrl(): string {
   return process.env.DATABASE_URL?.trim() || "pglite:./.data/pglite";
 }
 
+/**
+ * True only when a DATABASE_URL is set. Without one, the website keeps no
+ * database at all: the forms save to Google Sheets and public pages show the
+ * content that ships with the code. (The embedded database is then only used
+ * by the admin area and local scripts.)
+ */
+export function databaseConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL?.trim());
+}
+
 export function isEmbeddedDatabase(): boolean {
   return databaseUrl().startsWith("pglite:");
 }

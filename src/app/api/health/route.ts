@@ -3,7 +3,8 @@ import path from "node:path";
 import { sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { company } from "@/config/company";
-import { getDb, isEmbeddedDatabase } from "@/lib/db";
+import { contactSheetsConfig, sheetsConfig } from "@/lib/google/sheets";
+import { databaseConfigured, getDb, isEmbeddedDatabase } from "@/lib/db";
 import { LIMITS, rateLimit } from "@/lib/security/rate-limit";
 import { clientIp } from "@/lib/security/request";
 
@@ -47,24 +48,32 @@ export async function GET(request: Request) {
   if (!rl.ok) return NextResponse.json({ status: "busy" }, { status: 429 });
 
   const embedded = isEmbeddedDatabase();
+  const useDatabase = databaseConfigured();
   const database: Record<string, unknown> = {
-    type: embedded ? "embedded (development database, no DATABASE_URL set)" : "postgresql",
+    type: useDatabase ? (embedded ? "embedded" : "postgresql") : "none (no DATABASE_URL): forms save to Google Sheets",
   };
-  try {
-    const db = await getDb();
-    await db.execute(sql`select 1`);
-    database.ok = true;
-  } catch (error) {
-    database.ok = false;
-    database.error = describe(error);
+  if (useDatabase) {
+    try {
+      const db = await getDb();
+      await db.execute(sql`select 1`);
+      database.ok = true;
+    } catch (error) {
+      database.ok = false;
+      database.error = describe(error);
+    }
   }
+  const sheets = { quotationsSheetReady: sheetsConfig() !== null, getInTouchSheetReady: contactSheetsConfig() !== null };
 
   const set = (...names: string[]) => names.some((n) => !!process.env[n]?.trim());
   const cwd = process.cwd();
 
   const body = {
-    status: database.ok ? "ok" : "database_unavailable",
+    status: useDatabase
+      ? database.ok ? "ok" : "database_unavailable"
+      : sheets.quotationsSheetReady && sheets.getInTouchSheetReady ? "ok" : "google_sheets_incomplete",
     time: new Date().toISOString(),
+    storage: useDatabase ? "database + Google Sheets" : "Google Sheets only",
+    sheets,
     database,
     files: {
       migrationsFolderFound: await exists(path.join(cwd, "drizzle", "meta", "_journal.json")),
@@ -94,7 +103,7 @@ export async function GET(request: Request) {
   };
 
   return NextResponse.json(body, {
-    status: database.ok ? 200 : 503,
+    status: body.status === "ok" ? 200 : 503,
     headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" },
   });
 }

@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { databaseConfigured } from "@/lib/db";
 import { newLeadReference } from "@/lib/ids";
 import { logger } from "@/lib/logger";
 import { botVerdict, clientIp, guardPublicPost, jsonError, readJson } from "@/lib/security/request";
@@ -25,14 +26,17 @@ export async function POST(request: Request) {
   if (botVerdict(parsed.data.bot) !== "ok") return jsonError(400, "We couldn't process this request. Please try again in a moment.");
 
   const { bot: _bot, ...input } = parsed.data;
-  try {
-    const result = await requestSiteVisit(input, { ipAddress: clientIp(request.headers) });
-    return NextResponse.json({ ok: true, reference: result.reference, linkedQuote: result.linkedQuote }, { status: 201 });
-  } catch (error) {
-    logger.error("site_visit.request_failed", { error });
+  if (databaseConfigured()) {
+    try {
+      const result = await requestSiteVisit(input, { ipAddress: clientIp(request.headers) });
+      after(() => recordSiteVisitSubmission(input, result.reference, result.linkedQuote));
+      return NextResponse.json({ ok: true, reference: result.reference, linkedQuote: result.linkedQuote }, { status: 201 });
+    } catch (error) {
+      logger.error("site_visit.request_failed", { error });
+    }
   }
 
-  // The database is unavailable: the request counts as received once it is on the Google Sheet.
+  // No database (or it is unavailable): the request counts as received once it is on the Google Sheet.
   const reference = newLeadReference();
   const linkedQuote =
     input.quoteNumber && isOfflineToken(input.accessToken) && getOfflineQuotation(input.quoteNumber, input.accessToken)

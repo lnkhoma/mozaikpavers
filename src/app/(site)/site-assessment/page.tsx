@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CallLink, WhatsAppLink } from "@/components/analytics/contact-links";
 import { SiteAssessmentForm, type LinkedQuote } from "@/components/site/site-assessment-form";
 import { Icon } from "@/components/ui/icons";
+import { databaseConfigured } from "@/lib/db";
 import { QUOTE_NUMBER_PATTERN } from "@/lib/ids";
 import { logger } from "@/lib/logger";
 import { getOfflineQuotation, isOfflineToken } from "@/lib/services/offline-quotations";
@@ -10,6 +11,7 @@ import { getQuotationForCustomer } from "@/lib/services/quotations";
 /** The quotation a "book a site assessment" link points to, if it is genuine. */
 async function findLinkedQuotation(quote: string, token: string) {
   if (isOfflineToken(token)) return getOfflineQuotation(quote, token);
+  if (!databaseConfigured()) return null;
   try {
     return await getQuotationForCustomer(quote, token);
   } catch (error) {

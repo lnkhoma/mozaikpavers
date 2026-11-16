@@ -1,6 +1,6 @@
 import { after, type NextRequest } from "next/server";
 import { getAdminUser } from "@/lib/auth/session";
-import { getDb } from "@/lib/db";
+import { databaseConfigured, getDb } from "@/lib/db";
 import { customers, quotations } from "@/lib/db/schema";
 import { QUOTE_NUMBER_PATTERN } from "@/lib/ids";
 import { logger } from "@/lib/logger";
@@ -31,12 +31,12 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/quotatio
   if (offline) {
     const found = getOfflineQuotation(number, token);
     row = found && { ...found, leadId: null };
-  } else if (token) {
+  } else if (token && databaseConfigured()) {
     row = await getQuotationForCustomer(number, token);
   }
   const customerDownload = row !== null;
 
-  if (!row && !offline && (await getAdminUser())) {
+  if (!row && !offline && databaseConfigured() && (await getAdminUser())) {
     const db = await getDb();
     const [found] = await db
       .select({ quotation: quotations, customer: customers })

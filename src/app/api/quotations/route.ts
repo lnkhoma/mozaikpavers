@@ -1,4 +1,5 @@
 import { after, NextResponse } from "next/server";
+import { databaseConfigured } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { QuotationInputError } from "@/lib/pricing/engine";
 import { botVerdict, clientIp, guardPublicPost, jsonError, readJson } from "@/lib/security/request";
@@ -34,46 +35,48 @@ export async function POST(request: Request) {
     return jsonError(400, "We couldn't process this request. Please try again in a moment.");
   }
 
-  try {
-    const outcome = await createQuotation(parsed.data, { ipAddress: clientIp(request.headers) });
-    const { quotation, customer } = outcome;
-
-    // Re-submitting an already-emailed quotation must not send it twice.
-    const delivery =
-      quotation.emailStatus === "sent" && !outcome.created
-        ? ({ status: "sent" } as const)
-        : await deliverQuotationEmail(quotation, customer);
-
-    if (outcome.created) {
-      // Internal notification runs after the response so the customer never waits on it.
-      after(() => notifySalesOfQuotation(outcome).catch((error) => logger.warn("sales_notification.error", { error })));
-    }
-
-    return NextResponse.json(
-      {
-        ok: true,
-        quoteNumber: quotation.quoteNumber,
-        accessToken: quotation.accessToken,
-        customerName: customer.fullName,
-        customerEmail: customer.email,
-        squareMetres: quotation.squareMetres,
-        grandTotal: quotation.grandTotal,
-        validUntil: quotation.validUntil,
-        result: quotation.result,
-        delivery: {
-          status: delivery.status,
-          ...(delivery.status === "failed" ? { canRetry: delivery.canRetry } : {}),
+  if (databaseConfigured()) {
+    try {
+      const outcome = await createQuotation(parsed.data, { ipAddress: clientIp(request.headers) });
+      const { quotation, customer } = outcome;
+  
+      // Re-submitting an already-emailed quotation must not send it twice.
+      const delivery =
+        quotation.emailStatus === "sent" && !outcome.created
+          ? ({ status: "sent" } as const)
+          : await deliverQuotationEmail(quotation, customer);
+  
+      if (outcome.created) {
+        // Internal notification runs after the response so the customer never waits on it.
+        after(() => notifySalesOfQuotation(outcome).catch((error) => logger.warn("sales_notification.error", { error })));
+      }
+  
+      return NextResponse.json(
+        {
+          ok: true,
+          quoteNumber: quotation.quoteNumber,
+          accessToken: quotation.accessToken,
+          customerName: customer.fullName,
+          customerEmail: customer.email,
+          squareMetres: quotation.squareMetres,
+          grandTotal: quotation.grandTotal,
+          validUntil: quotation.validUntil,
+          result: quotation.result,
+          delivery: {
+            status: delivery.status,
+            ...(delivery.status === "failed" ? { canRetry: delivery.canRetry } : {}),
+          },
         },
-      },
-      { status: outcome.created ? 201 : 200 },
-    );
-  } catch (error) {
-    if (error instanceof QuotationInputError) return jsonError(422, error.message);
-    logger.error("quotation.create_failed", { error });
+        { status: outcome.created ? 201 : 200 },
+      );
+    } catch (error) {
+      if (error instanceof QuotationInputError) return jsonError(422, error.message);
+      logger.error("quotation.create_failed", { error });
+    }
   }
 
-  // The database is unavailable: issue the quotation without it. The Google
-  // Sheet records it when the customer downloads the PDF.
+  // No database (or it is unavailable): issue the quotation without one. The
+  // Google Sheet records it when the customer downloads the PDF.
   try {
     const { quotation, customer } = createOfflineQuotation(parsed.data, (await getPublicPricing()).values);
     const delivery = await deliverOfflineQuotationEmail(quotation, customer);

@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import type { ProjectCategory } from "@/lib/constants";
+import { databaseConfigured } from "@/lib/db";
 import { staticProjects } from "@/lib/db/portfolio-fallback";
 import { logger } from "@/lib/logger";
 import { DEFAULT_PRICING } from "@/lib/pricing/defaults";
@@ -34,9 +35,9 @@ let lastFallbackLog = 0;
 
 class DatabasePaused extends Error {}
 
-/** Runs a database read unless the database failed moments ago. */
+/** Runs a database read unless there is no database or it failed moments ago. */
 function read<T>(query: () => Promise<T>): Promise<T> {
-  if (Date.now() < databaseDownUntil) return Promise.reject(new DatabasePaused());
+  if (!databaseConfigured() || Date.now() < databaseDownUntil) return Promise.reject(new DatabasePaused());
   return query();
 }
 
