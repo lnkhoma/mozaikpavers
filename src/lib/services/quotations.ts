@@ -10,7 +10,7 @@ import {
   type Customer,
   type Quotation,
 } from "@/lib/db/schema";
-import { sendEmail } from "@/lib/email";
+import { clientCopyRecipients, sendEmail } from "@/lib/email";
 import { newLeadNotificationEmail, quotationEmail } from "@/lib/email/templates";
 import { addDaysIso, formatQuoteNumber, malawiDate, newAccessToken, newLeadReference, tokensMatch } from "@/lib/ids";
 import { logger } from "@/lib/logger";
@@ -35,7 +35,7 @@ export function quotationLinks(q: Pick<Quotation, "quoteNumber" | "accessToken">
   const base = company.siteUrl;
   const params = new URLSearchParams({ token: q.accessToken });
   return {
-    downloadUrl: `${base}/api/quotations/${q.quoteNumber}/pdf?${params}`,
+    downloadUrl: `${base}/api/quotations/${q.quoteNumber}/pdf?${params}&download=1`,
     siteAssessmentUrl: `${base}/site-assessment?${new URLSearchParams({ quote: q.quoteNumber, token: q.accessToken })}`,
   };
 }
@@ -255,6 +255,7 @@ export async function deliverQuotationEmail(quotation: Quotation, customer: Cust
 
   const sent = await sendEmail({
     to: customer.email,
+    bcc: clientCopyRecipients(customer.email),
     subject: email.subject,
     html: email.html,
     text: email.text,
@@ -277,6 +278,41 @@ export async function deliverQuotationEmail(quotation: Quotation, customer: Cust
     .where(eq(quotations.id, quotation.id));
   logger.warn("quotation.email_failed", { quoteNumber: quotation.quoteNumber, attempt: reserved.attempts, error: sent.error });
   return { status: "failed", error: sent.error, canRetry: reserved.attempts < MAX_EMAIL_ATTEMPTS };
+}
+
+/**
+ * Follow-up to the customer the first time they download their quotation:
+ * a thank-you with the PDF attached and the next steps. Best effort; never throws.
+ */
+export async function sendDownloadFollowUpEmail(quotation: Quotation, customer: Customer): Promise<boolean> {
+  try {
+    const pdf = await renderQuotationPdf(quotation, customer);
+    const email = quotationEmail({
+      kind: "downloaded",
+      quoteNumber: quotation.quoteNumber,
+      customerName: customer.fullName,
+      squareMetres: quotation.squareMetres,
+      grandTotal: quotation.grandTotal,
+      validUntil: quotation.validUntil,
+      hasItemsSubjectToAssessment: quotation.result.hasItemsSubjectToAssessment,
+      ...quotationLinks(quotation),
+    });
+    const sent = await sendEmail({
+      to: customer.email,
+      bcc: clientCopyRecipients(customer.email),
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      replyTo: company.email,
+      attachments: [{ filename: `Mozaik-Pavers-${quotation.quoteNumber}.pdf`, content: pdf, contentType: "application/pdf" }],
+    });
+    if (!sent.ok) logger.warn("quotation.download_email_failed", { quoteNumber: quotation.quoteNumber, error: sent.error });
+    else logger.info("quotation.download_email_sent", { quoteNumber: quotation.quoteNumber });
+    return sent.ok;
+  } catch (error) {
+    logger.warn("quotation.download_email_failed", { quoteNumber: quotation.quoteNumber, error });
+    return false;
+  }
 }
 
 /** Internal heads-up to the sales inbox. Best effort; never blocks the customer. */

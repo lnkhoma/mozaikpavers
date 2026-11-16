@@ -8,14 +8,14 @@ import { LIMITS, rateLimit } from "@/lib/security/rate-limit";
 import { clientIp, jsonError } from "@/lib/security/request";
 import { recordQuotationDownload } from "@/lib/services/quotation-sheet";
 import { getOfflineQuotation, isOfflineToken, recordOfflineQuotationDownload } from "@/lib/services/offline-quotations";
-import { getQuotationForCustomer, renderQuotationPdf } from "@/lib/services/quotations";
+import { getQuotationForCustomer, renderQuotationPdf, sendDownloadFollowUpEmail } from "@/lib/services/quotations";
 import { eq } from "drizzle-orm";
 
 /**
  * GET /api/quotations/:number/pdf?token=…
  * Customers use their secret token; signed-in staff can open any quotation.
  * The PDF is rebuilt from the stored snapshot, so it never changes.
- * A customer's download is recorded and written once to the Google Sheet.
+ * A customer's first download is written once to the Google Sheet and sends them a follow-up email.
  */
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/quotations/[number]/pdf">) {
   const { number } = await ctx.params;
@@ -54,7 +54,11 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/quotatio
     if (customerDownload) {
       // After the response, so the spreadsheet never delays or blocks the PDF.
       const { quotation, customer } = row;
-      after(() => (offline ? recordOfflineQuotationDownload(quotation, customer) : recordQuotationDownload(quotation, customer)));
+      after(async () => {
+        const recorded = offline ? await recordOfflineQuotationDownload(quotation, customer) : await recordQuotationDownload(quotation, customer);
+        // Only the first recorded download sends the follow-up, so repeat downloads never repeat the email.
+        if (recorded === "exported") await sendDownloadFollowUpEmail(quotation, customer);
+      });
     }
     return new Response(Buffer.from(pdf), {
       headers: {

@@ -473,10 +473,19 @@ function OutcomePanel({ outcome, retrying, onRetry }: { outcome: Outcome; retryi
               {retrying ? <><Spinner /> Sending…</> : <><Icon name="refresh" className="size-4" /> Try sending the email again</>}
             </button>
           )}
-          <a href={pdfUrl} target="_blank" rel="noopener" className="btn btn-outline w-full text-ink-900">
+          <a
+            href={`${pdfUrl}&download=1`}
+            download={`Mozaik-Pavers-${outcome.quoteNumber}.pdf`}
+            className={`btn w-full ${sent ? "btn-outline text-ink-900" : "btn-primary"}`}
+          >
             <Icon name="download" className="size-4" /> Download PDF quotation
           </a>
-          <p className="text-center text-xs text-ink-500">Valid until {formatDate(outcome.validUntil)} · Estimate subject to site assessment</p>
+          <p className="text-center text-xs text-ink-500">
+            <a href={pdfUrl} target="_blank" rel="noopener" className="underline hover:text-ink-900">
+              Or view it in your browser
+            </a>
+            {" · "}Valid until {formatDate(outcome.validUntil)} · Estimate subject to site assessment
+          </p>
         </div>
       </div>
 

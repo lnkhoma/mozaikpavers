@@ -97,4 +97,22 @@ describe("quotations without a database", () => {
     expect(sheet).toHaveLength(2);
     expect(await recordOfflineQuotationDownload(found.quotation, found.customer, { config: null })).toBe("not_configured");
   });
+
+  it("writes one row when the same quotation is downloaded twice at once", async () => {
+    const issued = (await (await requestQuote(crypto.randomUUID())).json()) as Issued;
+    const found = getOfflineQuotation(issued.quoteNumber, issued.accessToken)!;
+    const sheet: string[] = ["Quotation No."];
+    const deps = {
+      config,
+      // A slow Google: both downloads would read the column before either row is added.
+      readColumn: async () => (await new Promise((r) => setTimeout(r, 20)), [...sheet]),
+      append: async (_c: unknown, _h: unknown, row: (string | number)[]) => void sheet.push(String(row[1])),
+    };
+    const results = await Promise.all([
+      recordOfflineQuotationDownload(found.quotation, found.customer, deps),
+      recordOfflineQuotationDownload(found.quotation, found.customer, deps),
+    ]);
+    expect(results.sort()).toEqual(["already_exported", "exported"]);
+    expect(sheet).toHaveLength(2);
+  });
 });

@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import { company } from "@/config/company";
 import type { Customer, Quotation } from "@/lib/db/schema";
-import { sendEmail } from "@/lib/email";
+import { clientCopyRecipients, sendEmail } from "@/lib/email";
 import { quotationEmail } from "@/lib/email/templates";
 import { appendSheetRow, readSheetColumn, sheetsConfig, type SheetCell, type SheetsConfig } from "@/lib/google/sheets";
 import { addDaysIso, formatQuoteNumber, malawiDate } from "@/lib/ids";
@@ -163,6 +163,7 @@ export async function deliverOfflineQuotationEmail(quotation: Quotation, custome
     });
     const sent = await sendEmail({
       to: customer.email,
+      bcc: clientCopyRecipients(customer.email),
       subject: email.subject,
       html: email.html,
       text: email.text,
@@ -180,16 +181,34 @@ export async function deliverOfflineQuotationEmail(quotation: Quotation, custome
 type Appender = (config: SheetsConfig, header: string[], row: SheetCell[]) => Promise<void>;
 type ColumnReader = (config: SheetsConfig, column: string) => Promise<string[]>;
 
+type ExportResult = "exported" | "already_exported" | "not_configured" | "failed";
+
+/** Downloads being written right now, so a double-click cannot add two rows. */
+const inFlight = new Map<string, Promise<ExportResult>>();
+
 /**
  * Writes a downloaded offline quotation to the Google Sheet once: the sheet's
- * quotation-number column is checked first, as there is no database to remember it.
+ * quotation-number column is checked first, as there is no database to remember it,
+ * and simultaneous downloads of the same quotation share one write.
  * Never throws.
  */
 export async function recordOfflineQuotationDownload(
   quotation: Quotation,
   customer: Customer,
   deps: { config?: SheetsConfig | null; append?: Appender; readColumn?: ColumnReader } = {},
-): Promise<"exported" | "already_exported" | "not_configured" | "failed"> {
+): Promise<ExportResult> {
+  const pending = inFlight.get(quotation.quoteNumber);
+  if (pending) return pending.then((result) => (result === "exported" ? "already_exported" : result));
+  const task = exportOnce(quotation, customer, deps).finally(() => inFlight.delete(quotation.quoteNumber));
+  inFlight.set(quotation.quoteNumber, task);
+  return task;
+}
+
+async function exportOnce(
+  quotation: Quotation,
+  customer: Customer,
+  deps: { config?: SheetsConfig | null; append?: Appender; readColumn?: ColumnReader },
+): Promise<ExportResult> {
   const config = deps.config === undefined ? sheetsConfig() : deps.config;
   if (!config) return "not_configured";
   try {

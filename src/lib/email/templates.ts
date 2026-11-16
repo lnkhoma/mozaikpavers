@@ -11,6 +11,8 @@ interface QuotationEmailData {
   hasItemsSubjectToAssessment: boolean;
   downloadUrl: string;
   siteAssessmentUrl: string;
+  /** "downloaded": the follow-up sent when the customer first downloads the PDF. */
+  kind?: "issued" | "downloaded";
 }
 
 const button = (href: string, label: string, bg: string) =>
@@ -18,7 +20,13 @@ const button = (href: string, label: string, bg: string) =>
 
 export function quotationEmail(d: QuotationEmailData) {
   const firstName = d.customerName.split(/\s+/)[0] ?? d.customerName;
-  const subject = `Your Mozaik Pavers Quotation – ${d.quoteNumber}`;
+  const downloaded = d.kind === "downloaded";
+  const subject = downloaded
+    ? `Thank you for downloading your Mozaik Pavers quotation – ${d.quoteNumber}`
+    : `Your Mozaik Pavers Quotation – ${d.quoteNumber}`;
+  const intro = downloaded
+    ? "Thank you for downloading your quotation from our website. A copy is attached for your records. When you are ready, the next step is a site assessment: we visit to confirm measurements, ground conditions and drainage, then issue your final quotation."
+    : "Thank you for considering Mozaik Pavers for your project. Your estimated quotation is attached as a PDF.";
   const wa = whatsappLink(`Hello Mozaik Pavers, I received quotation ${d.quoteNumber} and would like to discuss it.`);
 
   const html = `<!doctype html>
@@ -31,7 +39,7 @@ export function quotationEmail(d: QuotationEmailData) {
   </td></tr>
   <tr><td style="padding:28px">
     <p style="font-size:16px;margin:0 0 14px">Dear ${escapeHtml(firstName)},</p>
-    <p style="font-size:15px;line-height:1.6;margin:0 0 18px">Thank you for considering Mozaik Pavers for your project. Your estimated quotation is attached as a PDF.</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 18px">${escapeHtml(intro)}</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f3f2;border-radius:10px;margin:0 0 18px">
       <tr><td style="padding:18px 20px;font-size:14px;line-height:1.9">
         <strong>Quotation reference:</strong> ${escapeHtml(d.quoteNumber)}<br>
@@ -61,7 +69,7 @@ export function quotationEmail(d: QuotationEmailData) {
   const text = [
     `Dear ${firstName},`,
     "",
-    "Thank you for considering Mozaik Pavers. Your estimated quotation is attached.",
+    intro,
     "",
     `Quotation reference: ${d.quoteNumber}`,
     `Customer: ${d.customerName}`,

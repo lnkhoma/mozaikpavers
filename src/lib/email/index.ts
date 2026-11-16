@@ -10,11 +10,28 @@ export interface EmailAttachment {
 
 export interface EmailMessage {
   to: string;
+  /** Hidden copies: the customer does not see these addresses. */
+  bcc?: string[];
   subject: string;
   html: string;
   text: string;
   replyTo?: string;
   attachments?: EmailAttachment[];
+}
+
+/**
+ * Who gets a hidden copy of every email sent to a customer. CLIENT_EMAIL_BCC
+ * takes a comma-separated list; "none" turns the copies off.
+ */
+const DEFAULT_CLIENT_EMAIL_BCC = "lnkhoma@gmail.com";
+
+export function clientCopyRecipients(customerEmail: string): string[] {
+  const configured = process.env.CLIENT_EMAIL_BCC?.trim() || DEFAULT_CLIENT_EMAIL_BCC;
+  if (configured.toLowerCase() === "none") return [];
+  return configured
+    .split(",")
+    .map((a) => a.trim())
+    .filter((a) => a && a.toLowerCase() !== customerEmail.trim().toLowerCase());
 }
 
 export type SendResult = { ok: true; id: string } | { ok: false; error: string };
@@ -56,6 +73,7 @@ async function sendWithResend(message: EmailMessage): Promise<SendResult> {
     body: JSON.stringify({
       from,
       to: [message.to],
+      ...(message.bcc?.length ? { bcc: message.bcc } : {}),
       subject: message.subject,
       html: message.html,
       text: message.text,
@@ -85,7 +103,7 @@ async function writeToOutbox(message: EmailMessage): Promise<SendResult> {
   const dir = path.resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.EMAIL_OUTBOX_DIR ?? ".data/outbox");
   await mkdir(dir, { recursive: true });
   const id = `${new Date().toISOString().replace(/[:.]/g, "-")}-${Math.random().toString(36).slice(2, 8)}`;
-  await writeFile(path.join(dir, `${id}.html`), `<!-- To: ${message.to}\n     Subject: ${message.subject} -->\n${message.html}`);
+  await writeFile(path.join(dir, `${id}.html`), `<!-- To: ${message.to}${message.bcc?.length ? `\n     Bcc: ${message.bcc.join(", ")}` : ""}\n     Subject: ${message.subject} -->\n${message.html}`);
   for (const a of message.attachments ?? []) {
     await writeFile(path.join(dir, `${id}-${a.filename}`), a.content);
   }
